@@ -18,22 +18,23 @@ class FaceModel(nn.Module):
         self.model.classifier = nn.Linear(self.embedding_size, num_classes)
 
 
-    def l2_norm(self,input):
-        input_size = input.size()
-        buffer = torch.pow(input, 2)
+    def l2_norm(self,input):##每一行计算平方和然后取根号，然后每一行都除以对应的标准差
+        input_size = input.size()##（？，embedding_size）
+        buffer = torch.pow(input, 2)##（？，embedding_size）
 
-        normp = torch.sum(buffer, 1).add_(1e-10)
-        norm = torch.sqrt(normp)
+        normp = torch.sum(buffer, 1).add_(1e-10)##（？）
+        norm = torch.sqrt(normp)##（？）
 
+##（？，embedding_size）,其中view(-1, 1)把（？）变为（？，1），然后通过expand_as变为（？，embedding_size），其中多出的列都是第一列的复制
         _output = torch.div(input, norm.view(-1, 1).expand_as(input))
 
-        output = _output.view(input_size)
+        output = _output.view(input_size)##（？，embedding_size）
 
         return output
 
     def forward(self, x):
 
-        x = self.model.conv1(x)
+        x = self.model.conv1(x)##self.model.conv1表示resnet中的第一个conv，以下同理
         x = self.model.bn1(x)
         x = self.model.relu(x)
         x = self.model.maxpool(x)
@@ -42,7 +43,7 @@ class FaceModel(nn.Module):
         x = self.model.layer3(x)
         x = self.model.layer4(x)
         x = x.view(x.size(0), -1)
-        x = self.model.fc(x)
+        x = self.model.fc(x)##out=（？，embedding_size）
         self.features = self.l2_norm(x)
         # Multiply by alpha = 10 as suggested in https://arxiv.org/pdf/1703.09507.pdf
         alpha=10

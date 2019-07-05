@@ -8,7 +8,7 @@ from tqdm import tqdm
 class TripletFaceDataset(datasets.ImageFolder):
 
     def __init__(self, dir, n_triplets, transform=None, *arg, **kw):
-        super(TripletFaceDataset, self).__init__(dir,transform)
+        super(TripletFaceDataset, self).__init__(dir,transform) ##调用父函数的__init__
 
         self.n_triplets = n_triplets
 
@@ -16,8 +16,8 @@ class TripletFaceDataset(datasets.ImageFolder):
         self.training_triplets = self.generate_triplets(self.imgs, self.n_triplets,len(self.classes))
 
     @staticmethod
-    def generate_triplets(imgs, num_triplets,n_classes):
-        def create_indices(_imgs):
+    def generate_triplets(imgs, num_triplets,n_classes):##返回triplets，triplets表示产生的训练对，每个训练对有三个图片和两个标签
+        def create_indices(_imgs):##返回一个dict，key表示label，value表示每个label对应的所有的图片的路径
             inds = dict()
             for idx, (img_path,label) in enumerate(_imgs):
                 if label not in inds:

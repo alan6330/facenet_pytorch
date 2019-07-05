@@ -108,7 +108,7 @@ class TripletMarginLoss(Function):
         d_p = self.pdist.forward(anchor, positive)
         d_n = self.pdist.forward(anchor, negative)
 
-        dist_hinge = torch.clamp(self.margin + d_p - d_n, min=0.0)
+        dist_hinge = torch.clamp(self.margin + d_p - d_n, min=0.0)##把self.margin + d_p - d_n值，小于0的都设为0
         loss = torch.mean(dist_hinge)
         return loss
 
@@ -145,7 +145,7 @@ class Scale(object):
 
 
 kwargs = {'num_workers': 2, 'pin_memory': True} if args.cuda else {}
-l2_dist = PairwiseDistance(2)
+l2_dist = PairwiseDistance(2) ##计算两个向量之间的标准差
 
 transform = transforms.Compose([
                          Scale(96),
@@ -153,7 +153,7 @@ transform = transforms.Compose([
                          transforms.Normalize(mean = [ 0.5, 0.5, 0.5 ],
                                                std = [ 0.5, 0.5, 0.5 ])
                      ])
-
+##args.n_triplets表示会产生多少个训练对，每个训练对有三个图片
 train_dir = TripletFaceDataset(dir=args.dataroot,n_triplets=args.n_triplets,transform=transform)
 train_loader = torch.utils.data.DataLoader(train_dir,
     batch_size=args.batch_size, shuffle=False, **kwargs)
@@ -224,22 +224,23 @@ def train(train_loader, model, optimizer, epoch):
         out_a, out_p, out_n = model(data_a), model(data_p), model(data_n)
 
         # Choose the hard negatives
-        d_p = l2_dist.forward(out_a, out_p)
-        d_n = l2_dist.forward(out_a, out_n)
-        all = (d_n - d_p < args.margin).cpu().data.numpy().flatten()
-        hard_triplets = np.where(all == 1)
+        d_p = l2_dist.forward(out_a, out_p)##（batchsize,）
+        d_n = l2_dist.forward(out_a, out_n)##（batchsize,）
+        all = (d_n - d_p < args.margin).cpu().data.numpy().flatten()##（batchsize,）
+        hard_triplets = np.where(all == 1)##输出all中值为1的元素所在的索引，但是很少会刚好为1
         if len(hard_triplets[0]) == 0:
             continue
-        out_selected_a = Variable(torch.from_numpy(out_a.cpu().data.numpy()[hard_triplets]).cuda())
+        out_selected_a = Variable(torch.from_numpy(out_a.cpu().data.numpy()[hard_triplets]).cuda())##输出out_a中hard_triplets的索引元素
         out_selected_p = Variable(torch.from_numpy(out_p.cpu().data.numpy()[hard_triplets]).cuda())
         out_selected_n = Variable(torch.from_numpy(out_n.cpu().data.numpy()[hard_triplets]).cuda())
 
-        selected_data_a = Variable(torch.from_numpy(data_a.cpu().data.numpy()[hard_triplets]).cuda())
+        selected_data_a = Variable(torch.from_numpy(data_a.cpu().data.numpy()[hard_triplets]).cuda())##输出data_a中hard_triplets的索引的输入图片
         selected_data_p = Variable(torch.from_numpy(data_p.cpu().data.numpy()[hard_triplets]).cuda())
         selected_data_n = Variable(torch.from_numpy(data_n.cpu().data.numpy()[hard_triplets]).cuda())
 
-        selected_label_p = torch.from_numpy(label_p.cpu().numpy()[hard_triplets])
+        selected_label_p = torch.from_numpy(label_p.cpu().numpy()[hard_triplets])##输出label_p中hard_triplets的索引标签元素行
         selected_label_n= torch.from_numpy(label_n.cpu().numpy()[hard_triplets])
+        ##对a与p距离，a与n的距离做差值且做和，最后的值越小越好
         triplet_loss = TripletMarginLoss(args.margin).forward(out_selected_a, out_selected_p, out_selected_n)
 
         cls_a = model.forward_classifier(selected_data_a)
@@ -247,7 +248,7 @@ def train(train_loader, model, optimizer, epoch):
         cls_n = model.forward_classifier(selected_data_n)
 
         criterion = nn.CrossEntropyLoss()
-        predicted_labels = torch.cat([cls_a,cls_p,cls_n])
+        predicted_labels = torch.cat([cls_a,cls_p,cls_n])##默认cat的维度为0，也就是在行上叠加
         true_labels = torch.cat([Variable(selected_label_p.cuda()),Variable(selected_label_p.cuda()),Variable(selected_label_n.cuda())])
 
         cross_entropy_loss = criterion(predicted_labels.cuda(),true_labels.cuda())
@@ -259,7 +260,7 @@ def train(train_loader, model, optimizer, epoch):
         optimizer.step()
 
         # update the optimizer learning rate
-        adjust_learning_rate(optimizer)
+        adjust_learning_rate(optimizer)##随着训练，学习率越小
 
         # log loss value
         logger.log_value('triplet_loss', triplet_loss.data[0]).step()
