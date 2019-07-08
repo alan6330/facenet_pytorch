@@ -19,16 +19,16 @@ def calculate_roc(thresholds, distances, labels, nrof_folds=10):
     nrof_thresholds = len(thresholds)
     k_fold = KFold(n_splits=nrof_folds, shuffle=False)
 
-    tprs = np.zeros((nrof_folds,nrof_thresholds))
-    fprs = np.zeros((nrof_folds,nrof_thresholds))
-    accuracy = np.zeros((nrof_folds))
+    tprs = np.zeros((nrof_folds,nrof_thresholds))##(10,3000)
+    fprs = np.zeros((nrof_folds,nrof_thresholds))##(10,3000)
+    accuracy = np.zeros((nrof_folds))##(10)
 
     indices = np.arange(nrof_pairs)
 
     for fold_idx, (train_set, test_set) in enumerate(k_fold.split(indices)):
 
         # Find the best threshold for the fold
-        acc_train = np.zeros((nrof_thresholds))
+        acc_train = np.zeros((nrof_thresholds))##(3000)
         for threshold_idx, threshold in enumerate(thresholds):
             _, _, acc_train[threshold_idx] = calculate_accuracy(threshold, distances[train_set], labels[train_set])
         best_threshold_index = np.argmax(acc_train)
@@ -42,9 +42,9 @@ def calculate_roc(thresholds, distances, labels, nrof_folds=10):
 
 
 def calculate_accuracy(threshold, dist, actual_issame):
-    predict_issame = np.less(dist, threshold)
-    tp = np.sum(np.logical_and(predict_issame, actual_issame))
-    fp = np.sum(np.logical_and(predict_issame, np.logical_not(actual_issame)))
+    predict_issame = np.less(dist, threshold)##dist中小于threshold为true，否则为false
+    tp = np.sum(np.logical_and(predict_issame, actual_issame))##进行与操作，本来为1的，且预测结果为1的与后为1，其他都为0
+    fp = np.sum(np.logical_and(predict_issame, np.logical_not(actual_issame)))##进行与操作，本来为0的，且预测结果为1的与后为1，其他都为0
     tn = np.sum(np.logical_and(np.logical_not(predict_issame), np.logical_not(actual_issame)))
     fn = np.sum(np.logical_and(np.logical_not(predict_issame), actual_issame))
 

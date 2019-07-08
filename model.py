@@ -108,9 +108,9 @@ class FaceModelCenter(nn.Module):
         batch_size = target.size(0)
         features_dim = self.features.size(1)
 
-        target_expand = target.view(batch_size,1).expand(batch_size,features_dim)
+        target_expand = target.view(batch_size,1).expand(batch_size,features_dim)##(batch_size,features_dim)
 
-        centers_var = Variable(self.centers)
+        centers_var = Variable(self.centers)##(num_classes, embedding_size)有点问题
         centers_batch = centers_var.gather(0,target_expand).cuda()
 
         criterion = nn.MSELoss()

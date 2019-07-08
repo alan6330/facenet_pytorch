@@ -227,7 +227,7 @@ def train(train_loader, model, optimizer, epoch):
         d_p = l2_dist.forward(out_a, out_p)##（batchsize,）
         d_n = l2_dist.forward(out_a, out_n)##（batchsize,）
         all = (d_n - d_p < args.margin).cpu().data.numpy().flatten()##（batchsize,）
-        hard_triplets = np.where(all == 1)##输出all中值为1的元素所在的索引，但是很少会刚好为1
+        hard_triplets = np.where(all == 1)##输出all中值为1的元素所在的索引，但是很少会刚好为1,不知道为什么会这样
         if len(hard_triplets[0]) == 0:
             continue
         out_selected_a = Variable(torch.from_numpy(out_a.cpu().data.numpy()[hard_triplets]).cuda())##输出out_a中hard_triplets的索引元素
@@ -275,16 +275,16 @@ def train(train_loader, model, optimizer, epoch):
 
 
         dists = l2_dist.forward(out_selected_a,out_selected_n) #torch.sqrt(torch.sum((out_a - out_n) ** 2, 1))  # euclidean distance
-        distances.append(dists.data.cpu().numpy())
-        labels.append(np.zeros(dists.size(0)))
+        distances.append(dists.data.cpu().numpy())##（batchsize）
+        labels.append(np.zeros(dists.size(0)))##（batchsize）
 
 
         dists = l2_dist.forward(out_selected_a,out_selected_p)#torch.sqrt(torch.sum((out_a - out_p) ** 2, 1))  # euclidean distance
-        distances.append(dists.data.cpu().numpy())
-        labels.append(np.ones(dists.size(0)))
+        distances.append(dists.data.cpu().numpy())##（batchsize）
+        labels.append(np.ones(dists.size(0)))##（batchsize）
 
-    labels = np.array([sublabel for label in labels for sublabel in label])
-    distances = np.array([subdist[0] for dist in distances for subdist in dist])
+    labels = np.array([sublabel for label in labels for sublabel in label])##（？）
+    distances = np.array([subdist[0] for dist in distances for subdist in dist])##（？）
 
     tpr, fpr, accuracy, val, val_std, far = evaluate(distances,labels)
     print('\33[91mTrain set: Accuracy: {:.8f}\n\33[0m'.format(np.mean(accuracy)))
